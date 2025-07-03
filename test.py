@@ -90,13 +90,9 @@ color_map = {d: palette[i] for i, d in enumerate(disease_options)}
 if 'direction' not in st.session_state:
     st.session_state.direction = '상위'
 with st.sidebar:
-    st.subheader("데이터 옵션")
-    pick = st.radio("", ["✅ 상위 Top 10","🔽 하위 Bottom 10"], label_visibility="collapsed")
-    st.session_state.direction = '상위' if pick.startswith("✅") else '하위'
-    st.markdown("---")
-    st.markdown("#### 🔍 연도별 질환 증가 추세 시각화 옵션")
+    st.markdown("#### 🔍 노인 주요 질환의 연도에 따른 추세 시각화 옵션")
     vis_mode = st.selectbox("", ["라인 차트📈","스캐터 플롯📌","스텝 차트👟","히트맵🧱"], label_visibility="collapsed")
-    st.markdown("#### 📽 연도별 질환 증가 추세")
+    st.markdown("#### 📝 노인 주요 질환 종류")
     selected_diseases = st.multiselect("", options=disease_options, default=disease_options, label_visibility="collapsed")
 
 
@@ -107,21 +103,33 @@ def si_format(x, pos):
     return f"{int(x)}"
 
 # 8) Top/Bottom Bar Chart
-st.markdown(
-    f"""
-    <h3>
-      <span title="65세 이상 국민을 대상으로 함">
-        🏥 질병에 따른 환자 분포 {'상위' if st.session_state.direction=='상위' else '하위'} Top 10
-      </span>
-    </h3>
-    """,
-    unsafe_allow_html=True
-)
+# 👉 라디오 버튼을 타이틀 옆에 배치 (columns 사용)
+col_title, col_radio = st.columns([4, 1])
+direction = st.radio(
+        "",  # 라벨 없음
+        ["상위 Top 10", "하위 Bottom 10"],
+        horizontal=True,
+        label_visibility="collapsed",
+        key="direction_radio"
+    )
 
+direction_str = "상위" if direction.startswith("상위") else "하위"
+
+# 선택에 따라 disp_df 추출
 disp_df = (
     df2023.nlargest(10, '진료실인원')
-    if st.session_state.direction == '상위'
+    if direction_str == '상위'
     else df2023.nsmallest(10, '진료실인원')
+)
+
+# 타이틀도 바꿔서 보여주기
+st.markdown(
+    f"""
+    <div style="text-align:center; font-size:20px; font-weight:600;">
+      🏥 노인 주요 질환별 환자 수 현황 <span style="color:#4682B4">{direction_str} Top 10</span>
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
 fig1, ax1 = plt.subplots(figsize=(10, 6))
@@ -147,7 +155,7 @@ st.pyplot(fig1)
 st.markdown("---")
 
 # 9) 연도별 질환 증가 추세 (유형별)
-st.subheader(f"📽노인 주요 질환의 연도에 따른  추세")
+st.subheader(f"📽노인 주요 질환의 연도에 따른 추세")
 trends = {d: [] for d in disease_options}
 for yr in years:
     dfy = load_data(filepaths[yr])
