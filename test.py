@@ -34,7 +34,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.title("🦷 노인 주요 질환 및 진료기관 분석 대시보드")
+st.title("🦷 노인 주요 질환에 따른 의료산업차이?")
 
 # 2) 한글 폰트 설정
 def ensure_nanum():
@@ -107,16 +107,40 @@ def si_format(x, pos):
     return f"{int(x)}"
 
 # 8) Top/Bottom Bar Chart
-st.subheader(f"🏥 진료실인원 기준 {'상위' if st.session_state.direction=='상위' else '하위'} Top 10")
-disp_df = df2023.nlargest(10,'진료실인원') if st.session_state.direction=='상위' else df2023.nsmallest(10,'진료실인원')
-fig1, ax1 = plt.subplots(figsize=(10,6))
+st.markdown(
+    f"""
+    <h3>
+      <span title="65세 이상 국민을 대상으로 함">
+        🏥 질병에 따른 환자 분포 {'상위' if st.session_state.direction=='상위' else '하위'} Top 10
+      </span>
+    </h3>
+    """,
+    unsafe_allow_html=True
+)
+
+disp_df = (
+    df2023.nlargest(10, '진료실인원')
+    if st.session_state.direction == '상위'
+    else df2023.nsmallest(10, '진료실인원')
+)
+
+fig1, ax1 = plt.subplots(figsize=(10, 6))
 sns.barplot(data=disp_df, y='상병명', x='진료실인원', palette='Set2', ax=ax1)
 ax1.xaxis.set_major_formatter(ticker.FuncFormatter(si_format))
 maxv = disp_df['진료실인원'].max()
 for p in ax1.patches:
-    w = p.get_width(); ax1.text(w + maxv*0.005, p.get_y() + p.get_height()/2, si_format(w, None), va='center', clip_on=False)
-ax1.set_xlabel("진료실인원"); ax1.set_ylabel("질병명")
-plt.tight_layout(); st.pyplot(fig1)
+    w = p.get_width()
+    ax1.text(
+        w + maxv * 0.005,
+        p.get_y() + p.get_height() / 2,
+        si_format(w, None),
+        va='center',
+        clip_on=False,
+    )
+ax1.set_xlabel("환자수")
+ax1.set_ylabel("질병명")
+plt.tight_layout()
+st.pyplot(fig1)
 
 # 9) 연도별 질환 증가 추세 (유형별)
 st.subheader(f"📽 연도별 질환 증가 추세 ({vis_mode})")
@@ -260,5 +284,32 @@ with col2:
     ax.legend(dict(zip(labels, handles)).values(), dict(zip(labels, handles)).keys(), bbox_to_anchor=(1,1))
     plt.xticks(rotation=45, ha='right'); plt.tight_layout()
     st.pyplot(fig)
-    
 
+#구분선으로 나누기
+st.markdown("---")
+    
+# 데이터 로드 및 전처리
+df_old = load_data("old_count_new.csv")
+df_old.columns = df_old.columns.str.strip()
+df_old['년도'] = pd.to_numeric(df_old['년도'], errors='coerce')
+df_old['65세 이상합계'] = pd.to_numeric(df_old['65세 이상합계'].astype(str).str.replace(',',''), errors='coerce')
+df_old = df_old.dropna(subset=['년도', '65세 이상합계'])
+
+# **여기서 연도 필터링!**
+selected_years = [2015, 2021, 2023]
+df_selected = df_old[df_old['년도'].isin(selected_years)].copy()
+
+# **선택된 연도만 피벗**
+pivot = df_selected.pivot_table(
+    index='지역', columns='년도', values='65세 이상합계', aggfunc='sum'
+).fillna(0)
+pivot = pivot.reindex(columns=selected_years, fill_value=0)  # 연도순 정렬
+
+st.subheader("📊 지역별 65세 이상 인구수 변화 (2015, 2021, 2023년)")
+fig, ax = plt.subplots(figsize=(10,6))
+pivot.plot(kind='bar', ax=ax)
+ax.set_ylabel("65세 이상 인구수")
+ax.set_xlabel("지역")
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+st.pyplot(fig)
