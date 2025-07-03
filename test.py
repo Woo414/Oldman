@@ -107,7 +107,7 @@ def si_format(x, pos):
 col_title, col_radio = st.columns([4, 1])
 direction = st.radio(
         "",  # 라벨 없음
-        ["상위 Top 10", "하위 Bottom 10"],
+        ["상위 10위", "하위 10위"],
         horizontal=True,
         label_visibility="collapsed",
         key="direction_radio"
@@ -192,7 +192,7 @@ if vis_mode != "히트맵🧱":
     ax2.legend(loc='upper left', bbox_to_anchor=(1,1))
 plt.tight_layout(); st.pyplot(fig2)
 
-st.subheader("⏳전북의 급속한 고령화, 이미 충북을 넘어 섰다.")
+st.subheader("⏳전북의 급속한 고령화... 충북보다 심각하다.")
 st.video("https://www.youtube.com/watch?v=EY9p79gmtGw")
 
 
@@ -225,7 +225,7 @@ if years_to_show:
     # 맨 마지막 선택된 연도를 기준으로 오름차순 정렬
     pivot = pivot.sort_values(by=years_to_show[-1], ascending=False)
 
-    st.subheader(f"📊 전북특별자치도 내 지역별 65세 이상 인구수 변화 ({', '.join(map(str, years_to_show))}년)")
+    st.subheader(f"📊 전북특별자치도 내 지역별 65세 이상 인구수 변화 추이 ({', '.join(map(str, years_to_show))}년)")
     fig, ax = plt.subplots(figsize=(10,6))
     pivot.plot(kind='bar', ax=ax)
     ax.set_ylabel("65세 이상 인구수")
@@ -309,11 +309,8 @@ with col1:
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
     st.pyplot(fig)
-    st.markdown(
-    f"##### 🔍 양 그래프의 차이?",
     unsafe_allow_html=True
-)
-st.info("병원 의원수에 비해 치과 의원 수가 2.5배 적다는 것을 그래프를 통해 확인할 수 있음.")
+st.info("일반 병원에 비해 치과의 수가 2.5배 적다는 것을 그래프를 통해 확인할 수 있음.")
 
 # 오른쪽: 병원수
 with col2:
