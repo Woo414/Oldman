@@ -142,6 +142,48 @@ ax1.set_ylabel("질병명")
 plt.tight_layout()
 st.pyplot(fig1)
 
+#df_old define
+df_old = load_data("old_count_new.csv")
+df_old.columns = df_old.columns.str.strip()
+df_old['년도'] = df_old['년도'].astype(str).str.strip()
+df_old['년도'] = pd.to_numeric(df_old['년도'], errors='coerce')
+
+## 년도별로 선택할 수 있음  <-- 이 부분 '복사'
+st.markdown("---")
+st.write("**연도별 보기 옵션**")
+cols = st.columns([0.1, 0.1, 0.1])
+show_2015 = cols[0].checkbox("2015", value=True)
+show_2021 = cols[1].checkbox("2021", value=True)
+show_2023 = cols[2].checkbox("2023", value=True)
+
+years_to_show = []
+if show_2015: years_to_show.append(2015)
+if show_2021: years_to_show.append(2021)
+if show_2023: years_to_show.append(2023)
+
+if years_to_show:
+    df_selected = df_old[df_old['년도'].isin(years_to_show)].copy()
+    pivot = df_selected.pivot_table(
+        index='지역', columns='년도', values='65세 이상합계', aggfunc='sum'
+    ).fillna(0)
+    pivot = pivot.reindex(columns=years_to_show, fill_value=0)
+    # 맨 마지막 선택된 연도를 기준으로 오름차순 정렬
+    pivot = pivot.sort_values(by=years_to_show[-1], ascending=False)
+
+    st.subheader(f"📊 전북특별자치도 내 지역별 65세 이상 인구수 변화 ({', '.join(map(str, years_to_show))}년)")
+    fig, ax = plt.subplots(figsize=(10,6))
+    pivot.plot(kind='bar', ax=ax)
+    ax.set_ylabel("65세 이상 인구수")
+    ax.set_xlabel("지역")
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    st.pyplot(fig)
+else:
+    st.info("최소 한 개 이상의 연도를 선택해야 그래프가 표시됩니다.")
+
+#구분선
+st.markdown("---")
+
 # 9) 연도별 질환 증가 추세 (유형별)
 st.subheader(f"📽 연도별 질환 증가 추세 ({vis_mode})")
 trends = {d: [] for d in disease_options}
@@ -180,6 +222,8 @@ if vis_mode != "히트맵🧱":
     ax2.legend(loc='upper left', bbox_to_anchor=(1,1))
 plt.tight_layout(); st.pyplot(fig2)
 
+#구분선
+st.markdown("---")
 
 # 14) old_count_new.csv 활용: '노인 1000명당 …' 지표 생성 및 특정 연도만 Bar Chart
 # 14-1) 데이터 로드 및 컬럼명 정리
@@ -285,113 +329,4 @@ with col2:
     plt.xticks(rotation=45, ha='right'); plt.tight_layout()
     st.pyplot(fig)
 
-#구분선으로 나누기
-st.markdown("---")
-    
-# 데이터 로드 및 전처리
-df_old = load_data("old_count_new.csv")
-df_old.columns = df_old.columns.str.strip()
-df_old['년도'] = pd.to_numeric(df_old['년도'], errors='coerce')
-df_old['65세 이상합계'] = pd.to_numeric(df_old['65세 이상합계'].astype(str).str.replace(',',''), errors='coerce')
-df_old = df_old.dropna(subset=['년도', '65세 이상합계'])
 
-# **여기서 연도 필터링!**
-selected_years = [2015, 2021, 2023]
-df_selected = df_old[df_old['년도'].isin(selected_years)].copy()
-
-# **선택된 연도만 피벗**
-pivot = df_selected.pivot_table(
-    index='지역', columns='년도', values='65세 이상합계', aggfunc='sum'
-).fillna(0)
-pivot = pivot.reindex(columns=selected_years, fill_value=0)  # 연도순 정렬
-pivot = pivot.sort_values(by=2023, ascending=False) # 오름차순으로 정의
-
-st.subheader("📊 지역별 65세 이상 인구수 변화 (2015, 2021, 2023년)")
-fig, ax = plt.subplots(figsize=(10,6))
-pivot.plot(kind='bar', ax=ax)
-ax.set_ylabel("65세 이상 인구수")
-ax.set_xlabel("지역")
-plt.xticks(rotation=45, ha='right')
-plt.tight_layout()
-st.pyplot(fig)
-
-
-## 년도별로 선택할 수 있음
-st.markdown("---")
-st.write("**연도별 보기 옵션**")
-cols = st.columns([0.1, 0.1, 0.1])  # 숫자를 더 작게 하면 더 붙음
-show_2015 = cols[0].checkbox("2015", value=True)
-show_2021 = cols[1].checkbox("2021", value=True)
-show_2023 = cols[2].checkbox("2023", value=True)
-
-years_to_show = []
-if show_2015: years_to_show.append(2015)
-if show_2021: years_to_show.append(2021)
-if show_2023: years_to_show.append(2023)
-
-if years_to_show:
-    df_selected = df_old[df_old['년도'].isin(years_to_show)].copy()
-    pivot = df_selected.pivot_table(
-        index='지역', columns='년도', values='65세 이상합계', aggfunc='sum'
-    ).fillna(0)
-    pivot = pivot.reindex(columns=years_to_show, fill_value=0)
-    # 맨 마지막 선택된 연도를 기준으로 오름차순 정렬
-    pivot = pivot.sort_values(by=years_to_show[-1], ascending=False)
-
-    st.subheader(f"📊 지역별 65세 이상 인구수 변화 ({', '.join(map(str, years_to_show))}년)")
-    fig, ax = plt.subplots(figsize=(10,6))
-    pivot.plot(kind='bar', ax=ax)
-    ax.set_ylabel("65세 이상 인구수")
-    ax.set_xlabel("지역")
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    st.pyplot(fig)
-else:
-    st.info("최소 한 개 이상의 연도를 선택해야 그래프가 표시됩니다.")
-
-
-##년도별 + 지역별로 볼 수 있음.
-st.markdown("---")
-st.write("**연도 +지역별 보기 옵션**")
-cols = st.columns([0.12, 0.12, 0.12])
-show_2015 = cols[0].checkbox("2015", value=True, key="cb2015")
-show_2021 = cols[1].checkbox("2021", value=True, key="cb2021")
-show_2023 = cols[2].checkbox("2023", value=True, key="cb2023")
-
-years_to_show = []
-if show_2015: years_to_show.append(2015)
-if show_2021: years_to_show.append(2021)
-if show_2023: years_to_show.append(2023)
-
-# 지역 멀티셀렉트 추가!
-region_options = sorted(df_old['지역'].unique())
-selected_regions = st.multiselect(
-    "비교할 지역을 선택하세요",
-    options=region_options,
-    default=region_options  # 기본값: 전체 선택
-)
-
-if years_to_show and selected_regions:
-    df_selected = df_old[
-        df_old['년도'].isin(years_to_show) &
-        df_old['지역'].isin(selected_regions)
-    ].copy()
-    pivot = df_selected.pivot_table(
-        index='지역', columns='년도', values='65세 이상합계', aggfunc='sum'
-    ).fillna(0)
-    pivot = pivot.reindex(columns=years_to_show, fill_value=0)
-    # 마지막 선택 연도 기준 내림차순
-    pivot = pivot.sort_values(by=years_to_show[-1], ascending=False)
-
-    st.subheader(f"📊 지역별 65세 이상 인구수 변화 ({', '.join(map(str, years_to_show))}년)")
-    fig, ax = plt.subplots(figsize=(10, 6))
-    pivot.plot(kind='bar', ax=ax)
-    ax.set_ylabel("65세 이상 인구수")
-    ax.set_xlabel("지역")
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    st.pyplot(fig)
-elif not selected_regions:
-    st.info("비교할 지역을 하나 이상 선택하세요.")
-else:
-    st.info("최소 한 개 이상의 연도를 선택해야 그래프가 표시됩니다.")
