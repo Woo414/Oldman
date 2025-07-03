@@ -34,7 +34,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.title("🦷 노인 주요 질환에 따른 의료산업차이?")
+st.title("📈 초고령화사회 속 의료 불균형, 데이터로 드러나다")
 
 # 2) 한글 폰트 설정
 def ensure_nanum():
@@ -193,7 +193,16 @@ if vis_mode != "히트맵🧱":
 plt.tight_layout(); st.pyplot(fig2)
 
 st.subheader("⏳전북의 급속한 고령화... 충북보다 심각하다.")
-st.video("https://www.youtube.com/watch?v=EY9p79gmtGw")
+youtube_url = "https://www.youtube.com/embed/EY9p79gmtGw?start=17"  # 60초부터 시작
+st.markdown(
+    f"""
+    <iframe width="700" height="400"
+    src="{youtube_url}"
+    frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+    allowfullscreen></iframe>
+    """,
+    unsafe_allow_html=True
+)
 
 
 #구분선
