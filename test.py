@@ -263,7 +263,7 @@ df_bar['노인 1000명당 치과수'] = pd.to_numeric(
 )
 
 # 14-4) Bar Chart 생성: 2019, 2021, 2023년만 & 옆으로 나란히 배치
-selected_years = [2015, 2021, 2023]
+selected_years = [2015, 2019, 2023]
 
 # 2개의 컬럼 생성
 col1, col2 = st.columns(2)
