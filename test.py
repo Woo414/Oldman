@@ -191,7 +191,7 @@ if vis_mode != "히트맵🧱":
     ax2.set_xlabel("연도"); ax2.set_ylabel("진료실인원")
     ax2.legend(loc='upper left', bbox_to_anchor=(1,1))
 plt.tight_layout(); st.pyplot(fig2)
-st.info("🔎 급성기관지염의 경우, 2020~2021년은 코로나19 유행으로 인해 마스크 착용과 사회적 거리두기 같은 특수한 상황이 영향을 미쳤을 것으로 추측됨.")
+st.info("🔎 급성기관지염의 경우, 코로나19 유행으로 인해 마스크 착용과 사회적 거리두기 같은 특수한 상황이 값에 영향을 미쳤을 것으로 추측됨.")
 
 st.subheader("⏳전북의 급속한 고령화... 충북보다 심각하다.")
 youtube_url = "https://www.youtube.com/embed/EY9p79gmtGw?start=17"  # 17초부터 시작
