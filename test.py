@@ -208,12 +208,12 @@ df_old['년도'] = pd.to_numeric(df_old['년도'], errors='coerce')
 st.write("**연도별 보기 옵션**")
 cols = st.columns([0.1, 0.1, 0.1])
 show_2015 = cols[0].checkbox("2015", value=True)
-show_2021 = cols[1].checkbox("2021", value=True)
+show_2021 = cols[1].checkbox("2019", value=True)
 show_2023 = cols[2].checkbox("2023", value=True)
 
 years_to_show = []
 if show_2015: years_to_show.append(2015)
-if show_2021: years_to_show.append(2021)
+if show_2021: years_to_show.append(2019)
 if show_2023: years_to_show.append(2023)
 
 if years_to_show:
