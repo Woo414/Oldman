@@ -1,0 +1,264 @@
+import os
+import platform
+import requests
+import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import matplotlib.font_manager as fm
+import matplotlib.ticker as ticker
+import numpy as np
+
+# 1) 페이지 설정 및 사이드바 크기 조정
+st.set_page_config(
+    page_title="전북 지역의 고령화와 노인 의료 ",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+st.markdown(
+    """
+    <style>
+    [data-testid="stSidebar"] { width: 300px; min-width: 300px; }
+    /* 사이드바 라디오, 셀렉트, 멀티셀렉트 요소 크기 조정 */
+    [data-testid="stSidebar"] .stRadio,
+    [data-testid="stSidebar"] .stSelectbox,
+    [data-testid="stSidebar"] .stMultiSelect {
+        font-size: 16px;
+        line-height: 2;
+        padding: 8px 0;
+    }
+    /* 멀티셀렉트 옵션 높이 조정 */
+    [data-testid="stSidebar"] div[role="listbox"] { max-height: 250px; }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+st.title("🦷 노인 주요 질환 및 진료기관 분석 대시보드")
+
+# 2) 한글 폰트 설정
+def ensure_nanum():
+    font_dir = os.path.join(os.getcwd(), "fonts")
+    os.makedirs(font_dir, exist_ok=True)
+    path = os.path.join(font_dir, "NanumGothic.ttf")
+    if not os.path.isfile(path):
+        url = "https://github.com/google/fonts/raw/main/ofl/nanumgothic/NanumGothic-Regular.ttf"
+        resp = requests.get(url); resp.raise_for_status()
+        with open(path, "wb") as f:
+            f.write(resp.content)
+    fm.fontManager.addfont(path)
+    return fm.FontProperties(fname=path).get_name()
+
+_sys = platform.system()
+if _sys == "Windows":
+    font_name = "Malgun Gothic"
+elif _sys == "Darwin":
+    font_name = "AppleGothic"
+else:
+    font_name = ensure_nanum()
+plt.rcParams['font.family'] = font_name
+plt.rcParams['axes.unicode_minus'] = False
+
+# 3) 데이터 로드 유틸
+@st.cache_data
+def load_data(path):
+    try:
+        return pd.read_csv(path, encoding='cp949')
+    except UnicodeDecodeError:
+        return pd.read_csv(path, encoding='utf-8-sig')
+
+# 연도별 파일 및 병원 파일 지정
+years = [2020, 2021, 2022, 2023]
+filepaths = {yr: f"{yr}disease.csv" for yr in years}
+hosp_path = "hospital_count.csv"
+
+# 4) 2023년도 데이터 로드 및 TOP10 추출
+df2023 = load_data(filepaths[2023])
+df2023.columns = df2023.columns.str.strip()
+numeric_cols = ['진료실인원','내원일수','급여일수','진료비','급여비']
+for c in numeric_cols:
+    if c in df2023.columns:
+        df2023[c] = pd.to_numeric(df2023[c].astype(str).str.replace(',',''), errors='coerce')
+top10 = df2023.nlargest(10, '진료실인원')['상병명'].tolist()
+disease_options = [d for d in top10 if 'U07' not in d]
+
+# 색상 매핑: Top10 질환 고정 색상
+palette = sns.color_palette('tab10', n_colors=len(disease_options))
+color_map = {d: palette[i] for i, d in enumerate(disease_options)}
+
+# 5) 사이드바 옵션
+if 'direction' not in st.session_state:
+    st.session_state.direction = '상위'
+with st.sidebar:
+    st.subheader("데이터 옵션")
+    pick = st.radio("", ["✅ 상위 Top 10","🔽 하위 Bottom 10"], label_visibility="collapsed")
+    st.session_state.direction = '상위' if pick.startswith("✅") else '하위'
+    st.markdown("---")
+    st.markdown("#### 🔍 연도별 질환 증가 추세 시각화 옵션")
+    vis_mode = st.selectbox("", ["라인 차트📈","스캐터 플롯📌","스텝 차트👟","히트맵🧱"], label_visibility="collapsed")
+    st.markdown("#### 📽 연도별 질환 증가 추세")
+    selected_diseases = st.multiselect("", options=disease_options, default=disease_options, label_visibility="collapsed")
+
+
+# 7) SI 포맷터
+def si_format(x, pos):
+    if x >= 1_000_000: return f"{x/1_000_000:.1f}M"
+    if x >= 1_000: return f"{x/1_000:.0f}K"
+    return f"{int(x)}"
+
+# 8) Top/Bottom Bar Chart
+st.subheader(f"🏥 진료실인원 기준 {'상위' if st.session_state.direction=='상위' else '하위'} Top 10")
+disp_df = df2023.nlargest(10,'진료실인원') if st.session_state.direction=='상위' else df2023.nsmallest(10,'진료실인원')
+fig1, ax1 = plt.subplots(figsize=(10,6))
+sns.barplot(data=disp_df, y='상병명', x='진료실인원', palette='Set2', ax=ax1)
+ax1.xaxis.set_major_formatter(ticker.FuncFormatter(si_format))
+maxv = disp_df['진료실인원'].max()
+for p in ax1.patches:
+    w = p.get_width(); ax1.text(w + maxv*0.005, p.get_y() + p.get_height()/2, si_format(w, None), va='center', clip_on=False)
+ax1.set_xlabel("진료실인원"); ax1.set_ylabel("질병명")
+plt.tight_layout(); st.pyplot(fig1)
+
+# 9) 연도별 질환 증가 추세 (유형별)
+st.subheader(f"📽 연도별 질환 증가 추세 ({vis_mode})")
+trends = {d: [] for d in disease_options}
+for yr in years:
+    dfy = load_data(filepaths[yr])
+    dfy.columns = dfy.columns.str.strip()
+    dfy['진료실인원'] = pd.to_numeric(dfy['진료실인원'].astype(str).str.replace(',',''), errors='coerce')
+    for d in disease_options:
+        vals = dfy.loc[dfy['상병명']==d, '진료실인원']
+        trends[d].append(vals.iloc[0] if not vals.empty else np.nan)
+allv = [v for arr in trends.values() for v in arr if not np.isnan(v)]
+ymin, ymax = min(allv), max(allv)
+
+if vis_mode == "라인 차트📈":
+    fig2, ax2 = plt.subplots(figsize=(10,6))
+    for d in selected_diseases:
+        ax2.plot(years, trends[d], marker='o', label=d, color=color_map[d])
+elif vis_mode == "스캐터 플롯📌":
+    fig2, ax2 = plt.subplots(figsize=(10,6))
+    for d in selected_diseases:
+        ax2.scatter(years, trends[d], label=d, color=color_map[d])
+elif vis_mode == "스텝 차트👟":
+    fig2, ax2 = plt.subplots(figsize=(10,6))
+    for d in selected_diseases:
+        ax2.step(years, trends[d], where='mid', marker='o', label=d, color=color_map[d])
+elif vis_mode == "히트맵🧱":
+    dfhm = pd.DataFrame(trends, index=years)
+    fig2, ax2 = plt.subplots(figsize=(10,6))
+    sns.heatmap(dfhm[selected_diseases].T, cmap='Blues', ax=ax2, cbar_kws={'format': ticker.FuncFormatter(si_format)})
+
+if vis_mode != "히트맵🧱":
+    ax2.set_xticks(years)
+    ax2.set_ylim(ymin*0.95, ymax*1.05)
+    ax2.yaxis.set_major_formatter(ticker.FuncFormatter(si_format))
+    ax2.set_xlabel("연도"); ax2.set_ylabel("진료실인원")
+    ax2.legend(loc='upper left', bbox_to_anchor=(1,1))
+plt.tight_layout(); st.pyplot(fig2)
+
+
+# 14) old_count_new.csv 활용: '노인 1000명당 …' 지표 생성 및 특정 연도만 Bar Chart
+# 14-1) 데이터 로드 및 컬럼명 정리
+df_old = load_data("old_count_new.csv")
+df_old.columns = df_old.columns.str.strip()
+
+# 14-2) '년도' 숫자 변환 후 2019~2023 필터링
+df_old['년도'] = df_old['년도'].astype(str).str.strip()
+df_old['년도'] = pd.to_numeric(df_old['년도'], errors='coerce')
+df_bar = df_old[df_old['년도'].between(2015, 2023)].copy()
+df_bar['년도'] = df_bar['년도'].astype(int)
+
+# 14-3) '노인 1000명당 …' 칼럼을 바로 숫자형으로 변환
+df_bar['노인 1000명당 병원수'] = pd.to_numeric(
+    df_bar['노인 1000명당 병원수'].astype(str).str.replace(',', ''),
+    errors='coerce'
+)
+df_bar['노인 1000명당 치과수'] = pd.to_numeric(
+    df_bar['노인 1000명당 치과수'].astype(str).str.replace(',', ''),
+    errors='coerce'
+)
+
+# 14-4) Bar Chart 생성: 2019, 2021, 2023년만 & 옆으로 나란히 배치
+selected_years = [2015, 2019, 2023]
+
+# 2개의 컬럼 생성
+col1, col2 = st.columns(2)
+
+
+# 왼쪽: 치과수
+with col1:
+    metric = '노인 1000명당 치과수'
+    st.subheader(
+        f"📈 지역별 · 년도별 {metric} 비교 ({', '.join(map(str, selected_years))}년)"
+    )
+    show_avg = st.checkbox("평균선 표시", value=True, key=f"avg_{metric}")
+
+    pivot = (
+        df_bar.pivot_table(
+            index='지역', columns='년도', values=metric, aggfunc='mean'
+        )
+        .reindex(columns=selected_years, fill_value=0)
+        .sort_values(by=2023, ascending=True)
+    )
+
+    fig, ax = plt.subplots(figsize=(6, 4))
+    colors = sns.color_palette('tab10', n_colors=len(selected_years))
+    # 범례 완전 제거
+    pivot.plot(kind='bar', ax=ax, color=colors, legend=False)
+
+    ax.set_ylim(top=6.0)
+
+    if show_avg:
+        means = pivot.mean(axis=0)
+        for i, yr in enumerate(selected_years):
+            ax.axhline(
+                means[yr],
+                color=colors[i],
+                linestyle='--',
+                linewidth=1.2
+            )
+
+    ax.set_xlabel("")
+    ax.set_ylabel(metric)
+    # legend 호출 부분 삭제
+
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    st.pyplot(fig)
+    st.markdown(
+    f"##### 🔍 양 그래프의 차이?",
+    unsafe_allow_html=True
+)
+st.info("병원 의원수에 비해 치과 의원 수가 2.5배 적다는 것을 그래프를 통해 확인할 수 있음.")
+
+# 오른쪽: 병원수
+with col2:
+    metric = '노인 1000명당 병원수'
+    st.subheader(f"📈 지역별 · 년도별 {metric} 비교 ({', '.join(map(str, selected_years))}년)")
+    show_avg = st.checkbox("평균선 표시", value=True, key=f"avg_{metric}")
+
+    pivot = df_bar.pivot_table(
+        index='지역', columns='년도', values=metric, aggfunc='mean'
+    ).reindex(columns=selected_years, fill_value=0)
+    pivot = pivot.sort_values(by=2023, ascending=True)
+
+    fig, ax = plt.subplots(figsize=(6, 4))
+    colors = sns.color_palette('tab10', n_colors=len(selected_years))
+    pivot.plot(kind='bar', ax=ax, color=colors)
+
+    # y축 Major tick 을 0.5 단위로 설정
+    ax.yaxis.set_major_locator(ticker.MultipleLocator(0.5))
+    # y축 Max를 6.0 단위로 설정
+    ax.set_ylim(top=6.0)
+
+    if show_avg:
+        means = pivot.mean(axis=0)
+        for i, yr in enumerate(selected_years):
+            ax.axhline(means[yr], color=colors[i], linestyle='--', linewidth=1.2, label=f"{yr}년 평균")
+    ax.set_xlabel(""); ax.set_ylabel(metric)
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(dict(zip(labels, handles)).values(), dict(zip(labels, handles)).keys(), bbox_to_anchor=(1,1))
+    plt.xticks(rotation=45, ha='right'); plt.tight_layout()
+    st.pyplot(fig)
+    
+
