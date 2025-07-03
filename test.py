@@ -18,7 +18,7 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    [data-testid="stSidebar"] { width: 300px; min-width: 300px; }
+    [data-testid="stSidebar"] { width: 100px; min-width: 100px; }
     /* 사이드바 라디오, 셀렉트, 멀티셀렉트 요소 크기 조정 */
     [data-testid="stSidebar"] .stRadio,
     [data-testid="stSidebar"] .stSelectbox,
