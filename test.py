@@ -193,10 +193,10 @@ if vis_mode != "히트맵🧱":
 plt.tight_layout(); st.pyplot(fig2)
 
 st.subheader("⏳전북의 급속한 고령화... 충북보다 심각하다.")
-youtube_url = "https://www.youtube.com/embed/EY9p79gmtGw?start=17"  # 60초부터 시작
+youtube_url = "https://www.youtube.com/embed/EY9p79gmtGw?start=17"  # 17초부터 시작
 st.markdown(
     f"""
-    <iframe width="700" height="400"
+    <iframe width="780" height="460"
     src="{youtube_url}"
     frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
     allowfullscreen></iframe>
@@ -245,10 +245,8 @@ if years_to_show:
 else:
     st.info("최소 한 개 이상의 연도를 선택해야 그래프가 표시됩니다.")
 
-
 #구분선
 st.markdown("---")
-
 
 # 14) old_count_new.csv 활용: '노인 1000명당 …' 지표 생성 및 특정 연도만 Bar Chart
 # 14-1) 데이터 로드 및 컬럼명 정리
@@ -319,7 +317,6 @@ with col1:
     plt.tight_layout()
     st.pyplot(fig)
     unsafe_allow_html=True
-################################# INFO ✨✨✨ 중요함. 이거 먼저 바꾸기!!!
 st.info("🔎 노인 치과 질환 수요가 가장 높음에도 불구하고, 병원 대비 치과 인프라는 2.5배 부족한 현상을 그래프를 통해 확인 가능.")
 
 # 오른쪽: 병원수
@@ -351,3 +348,11 @@ with col2:
     ax.legend(dict(zip(labels, handles)).values(), dict(zip(labels, handles)).keys(), bbox_to_anchor=(1,1))
     plt.xticks(rotation=45, ha='right'); plt.tight_layout()
     st.pyplot(fig)
+
+#구분선
+st.markdown("---")
+st.markdown('<h3 style="margin-top:0.3em; margin-bottom:0em;">📑 요점 · 요약 </h2>', unsafe_allow_html=True)
+st.markdown('<h6 style="margin-top:0.07em; margin-bottom:0em;">· 초고령화 사회 속, 노인들이 가장 많이 겪는 주요 질환은 치은염 및 치주질환 🦷</h2>', unsafe_allow_html=True)
+st.markdown('<h6 style="margin-top:0.07em; margin-bottom:0em;">· 치은염 및 치주질환은 해가 갈 수록 진료 수요가 빠르게 증가하고 있음 🔼</h2>', unsafe_allow_html=True)
+st.markdown('<h6 style="margin-top:0.07em; margin-bottom:0em;">· 65세 이상 인구는 전국적으로 증가하고 있으며, 전북은 그 중에서도 평균을 웃도는 빠른 고령화 속도를 보이고 있음 ⏫</h2>', unsafe_allow_html=True)
+st.markdown('<h6 style="margin-top:0.07em; margin-bottom:0em;">· 늘어난 치주질환의 수요에 대비 노인 1000명당 병원수에 비해 치과 의료기관 수는 턱없이 부족해 명확한 공급 불균형(비대칭)을 보이고 있음 📌</h2>', unsafe_allow_html=True)
