@@ -147,7 +147,7 @@ st.pyplot(fig1)
 st.markdown("---")
 
 # 9) 연도별 질환 증가 추세 (유형별)
-st.subheader(f"📽 연도별 질환 증가 추세 ({vis_mode})")
+st.subheader(f"📽노인 주요 질환의 연도에 따른  추세")
 trends = {d: [] for d in disease_options}
 for yr in years:
     dfy = load_data(filepaths[yr])
@@ -184,6 +184,12 @@ if vis_mode != "히트맵🧱":
     ax2.legend(loc='upper left', bbox_to_anchor=(1,1))
 plt.tight_layout(); st.pyplot(fig2)
 
+st.subheader("⏳전북의 급속한 고령화, 이미 충북을 넘어 섰다.")
+st.video("https://www.youtube.com/watch?v=EY9p79gmtGw")
+
+
+#구분선
+st.markdown("---")
 #df_old define
 df_old = load_data("old_count_new.csv")
 df_old.columns = df_old.columns.str.strip()
@@ -191,7 +197,6 @@ df_old['년도'] = df_old['년도'].astype(str).str.strip()
 df_old['년도'] = pd.to_numeric(df_old['년도'], errors='coerce')
 
 ## 년도별로 선택할 수 있음  <-- 이 부분 '복사'
-st.markdown("---")
 st.write("**연도별 보기 옵션**")
 cols = st.columns([0.1, 0.1, 0.1])
 show_2015 = cols[0].checkbox("2015", value=True)
