@@ -11,7 +11,7 @@ import numpy as np
 
 # 1) 페이지 설정 및 사이드바 크기 조정
 st.set_page_config(
-    page_title="전북 지역의 고령화와 노인 의료 ",
+    page_title="고령화 사회와 의료 불균형 대시보드",
     layout="wide",
     initial_sidebar_state="expanded"
 )
